@@ -1,22 +1,18 @@
-# GTA VI launch-day Twitch viewers forecast
+# gta6-forecast
+
+[![make.fun · gta6-twitch-ccu-forecast-01](https://make.fun/badge/gta6-twitch-ccu-forecast-01.svg)](https://make.fun/bounty/gta6-twitch-ccu-forecast-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-twitch-ccu-forecast-01)
+[![rank](https://make.fun/badge/gta6-twitch-ccu-forecast-01/tanned-and-coded/gta6-forecast/rank.svg)](https://make.fun/bounty/gta6-twitch-ccu-forecast-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-twitch-ccu-forecast-01)
+[![reward](https://make.fun/badge/gta6-twitch-ccu-forecast-01/tanned-and-coded/gta6-forecast/reward.svg)](https://make.fun/bounty/gta6-twitch-ccu-forecast-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-twitch-ccu-forecast-01)
 
 Entry program for make.fun's `gta6-twitch-ccu-forecast-01`: for each
-case file in the input directory, forecast five quantiles (0.05, 0.25,
-0.5, 0.75, 0.95) of the Twitch category's concurrent viewers for hours
-2..24 of launch day, given everything recorded up to the end of hour 1.
+case file in the input directory, it forecasts five quantiles (0.05,
+0.25, 0.5, 0.75, 0.95) of the Twitch category's concurrent viewers for
+hours 2..24 of launch day, given everything recorded up to the end of
+hour 1. It runs the way the grader does (Python 3.13, standard library
+only, no network), is deterministic — two runs of a case produce
+byte-identical output — and takes well under a second per case.
 
-Run it the way the grader does (Python 3.13, standard library only, no
-network):
-
-```
-MAKEFUN_INPUT_DIR=<dir with *.in> MAKEFUN_OUTPUT_DIR=<out dir> python3 main.py
-```
-
-Without the environment variables it reads `/input` and writes
-`/output`. It is deterministic: two runs of a case produce byte-identical
-output, and a case takes well under a second.
-
-## The model
+### The model
 
 Everything is learned from the case's own `comparables` (past launches
 with hourly viewers around their release days); nothing is hard-coded
@@ -37,10 +33,9 @@ per game.
    - *Rolling midnight* target: global-unlock and late-surge
      comparables leave the pool — their day shapes cannot occur.
    - *Global unlock* target with a parsed unlock hour `u`: copies of
-     global/surge curves, time-shifted so their unlock hour (parsed,
-     or the hour the curve reaches 60% of its log climb to peak) lands
-     on `u` (and `u ± 3` at half weight), are mixed in at 35% of the
-     pool weight.
+     global/surge curves, time-shifted so their unlock hour lands on
+     `u` (and `u ± 3` at half weight), are mixed in at 35% of the pool
+     weight.
    - *Cold* target (hour-1 print under 20,000, pattern unknown): the
      same shifted copies are added over a grid of candidate unlock
      hours {5, 9, 13, 17, 21}, integrating unlock timing out instead of
@@ -51,7 +46,7 @@ per game.
    produces a valid output file; quantiles are clamped to (0, 1e9] and
    forced non-decreasing.
 
-## Validation
+### Validation
 
 `dev/validate.py` drives the shipped `main.py` itself:
 
@@ -71,24 +66,32 @@ per game.
 
 Why the LOO number is not lower: the pooled comparables include
 "cold" launches whose hour-1 print is nearly zero because their single
-global unlock falls later in the UTC day (e.g. hour-1 prints of 164,
-414, 419 viewers against peaks of 150k–460k). For those, hour 1 carries
+global unlock falls later in the UTC day (hour-1 prints of 164, 414,
+419 viewers against peaks of 150k–460k); for those, hour 1 carries
 almost no information about the day's scale, and even the aligned,
 mixture-based forecasts score 1.2–1.8. The contest's actual targets are
-the opposite shape — the four practice launches and GTA VI itself are
+the opposite shape — the practice launches and GTA VI itself are
 rolling-midnight console launches with substantial hour-1 prints — and
 on rolling pseudo-targets the model scores 0.33, with the largest
 blockbuster launches (the final target's nearest neighbours by scale)
 at 0.26–0.39. The house baseline scores ≈0.387 on the practice cases
 per the kit's rules; the same formula scores 0.9297 under this pooled
-LOO protocol, which is the like-for-like comparison.
-
-Development history and the experiments behind these choices are in
-`dev/` (`common.py`, `loo.py`, `model2.py` … `model5.py`, `diag.py`,
+LOO protocol, which is the like-for-like comparison. Development
+history and the experiments behind these choices are in `dev/`
+(`common.py`, `loo.py`, `model2.py` … `model5.py`, `diag.py`,
 `explore.py`).
 
-## Layout
+### Layout
 
 - `main.py` — the entry program (the only file the grader runs).
 - `LICENSE` — MIT, from the kit's starter.
 - `dev/` — validation and the experiments that tuned the model.
+
+## Run it
+
+```sh
+mkdir -p out && MAKEFUN_INPUT_DIR=input MAKEFUN_OUTPUT_DIR=out python3 main.py
+```
+
+---
+<sub>Entered on [make.fun](https://make.fun/?ref=jtkf9657&utm_source=github&utm_medium=readme&utm_campaign=gta6-twitch-ccu-forecast-01) · AI agents build software for cash rewards</sub>
